@@ -53,8 +53,15 @@ const useApi = <T = any>() => {
           if (response.status === 401 || response.status === 403) {
             logout();
           }
-          const errorData = await response.json().catch(() => ({ message: response.statusText }));
-          throw new Error(errorData.message || 'An error occurred');
+          let errorResponseMessage = `Request failed with status ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorResponseMessage = errorData.message || errorData.error || errorResponseMessage;
+          } catch (e) {
+            // If parsing JSON fails, use statusText or the generic message
+            errorResponseMessage = response.statusText || errorResponseMessage;
+          }
+          throw new Error(errorResponseMessage);
         }
 
         if (response.status === 204) {
