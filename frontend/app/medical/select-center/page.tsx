@@ -28,7 +28,7 @@ export default function SelectCenterPage() {
       return;
     }
 
-    if (user.role !== "Medico") {
+    if (user.id_Rol !== 2) { // Changed to use id_Rol for Medico role
       router.push("/dashboard");
       return;
     }
