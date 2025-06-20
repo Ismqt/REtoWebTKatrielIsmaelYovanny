@@ -38,7 +38,7 @@ export function MedicalAppointmentsView() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "No se pudieron cargar las citas médicas",
+        description: error instanceof Error ? error.message : "No se pudieron cargar las citas médicas",
       });
     }
   }, [fetchAppointments, user?.id, selectedCenter, toast]);

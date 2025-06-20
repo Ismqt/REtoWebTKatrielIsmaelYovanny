@@ -54,12 +54,24 @@ const useApi = <T = any>() => {
             logout();
           }
           let errorResponseMessage = `Request failed with status ${response.status}`;
+          let parsedErrorData;
           try {
-            const errorData = await response.json();
-            errorResponseMessage = errorData.message || errorData.error || errorResponseMessage;
+            parsedErrorData = await response.json();
           } catch (e) {
-            // If parsing JSON fails, use statusText or the generic message
-            errorResponseMessage = response.statusText || errorResponseMessage;
+            // JSON parsing failed
+            parsedErrorData = null;
+          }
+
+          if (parsedErrorData && typeof parsedErrorData.message === 'string') {
+            errorResponseMessage = parsedErrorData.message;
+          } else if (parsedErrorData && typeof parsedErrorData.error === 'string') {
+            errorResponseMessage = parsedErrorData.error;
+          } else if (response.statusText) {
+            errorResponseMessage = response.statusText;
+          }
+          // Ensure errorResponseMessage is a non-empty string
+          if (!errorResponseMessage || typeof errorResponseMessage !== 'string') {
+            errorResponseMessage = `An error occurred (status ${response.status})`;
           }
           throw new Error(errorResponseMessage);
         }
