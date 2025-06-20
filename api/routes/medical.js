@@ -6,10 +6,21 @@ const { verifyToken, checkRole } = require('../middleware/authMiddleware');
 // GET /api/medical/appointments - Obtener citas médicas para el usuario autenticado (médico o personal del centro)
 router.get('/appointments', [verifyToken, checkRole([2, 6])], async (req, res) => {
   try {
-    const { pool } = req;
-    const { userId, id_Rol } = req.user;
+    const pool = await poolPromise; // Correctly obtain the pool
+    // Use id_Usuario from JWT payload, ensure it exists.
+    // The authMiddleware puts the JWT payload into req.user.
+    // Common user ID fields could be id, userId, id_Usuario.
+    // Given other routes like /attend-appointment use req.user.id or req.user.id_Usuario,
+    // let's assume the JWT contains id_Usuario for the user's primary key.
+    const doctorId = req.user?.id_Usuario || req.user?.id; // Prioritize id_Usuario, fallback to id
+    const { id_Rol } = req.user;
     const id_CentroVacunacion_Token = req.user.id_CentroVacunacion; // For manager role
     let result;
+
+    if (!doctorId && id_Rol === 2) { // Ensure doctorId is available for doctors
+        console.error('[MEDICAL APPOINTMENTS] Doctor ID not found in token for role 2.');
+        return res.status(403).json({ error: 'Información de usuario médico incompleta en el token.' });
+    }
 
     if (id_Rol === 2) {
       // Médico: obtener citas por centro desde query param
@@ -17,14 +28,19 @@ router.get('/appointments', [verifyToken, checkRole([2, 6])], async (req, res) =
       if (!id_centro) {
         return res.status(400).json({ error: 'El parámetro id_centro es requerido para médicos.' });
       }
-      console.log(`[MEDICAL APPOINTMENTS] Fetching CONFIRMED appointments for doctor id=${userId} in center id=${id_centro}`);
+      console.log(`[MEDICAL APPOINTMENTS] Fetching CONFIRMED appointments for doctor id=${doctorId} in center id=${id_centro}`);
       result = await pool.request()
-        .input('id_PersonalSalud', sql.Int, userId)
+        .input('id_PersonalSalud', sql.Int, doctorId) // Use the correctly obtained doctorId
         .input('id_CentroVacunacion', sql.Int, id_centro)
         .execute('dbo.usp_GetMedicalAppointments');
 
     } else if (id_Rol === 6) {
       // Gestor: obtener todas las citas confirmadas del centro desde el token
+      // For role 6 (manager), we don't need doctorId for this specific SP.
+      if (!id_CentroVacunacion_Token) {
+        console.error('[MEDICAL APPOINTMENTS] Center ID not found in token for manager role 6.');
+        return res.status(403).json({ error: 'Información de centro incompleta en el token para gestor.' });
+      }
       console.log(`[MEDICAL APPOINTMENTS] Fetching ALL confirmed appointments for manager in center id=${id_CentroVacunacion_Token}`);
       result = await pool.request()
         .input('id_CentroVacunacion', sql.Int, id_CentroVacunacion_Token)
