@@ -21,17 +21,9 @@ export default function Header() {
   const pathname = usePathname()
   const { user, logout, selectedCenter } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
+  const { theme } = useTheme() // Moved up
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  const { theme } = useTheme()
-
-  if (pathname === "/") {
-    return null;
-  }
-
+  // Moved useMemo hooks to be called unconditionally before any early returns
   const dashboardPath = useMemo(() => {
     if (user?.role === "Medico") {
       return "/medical/select-center";
@@ -45,6 +37,14 @@ export default function Header() {
     }
     return pathname === "/dashboard"
   }, [pathname, user])
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  if (pathname === "/") {
+    return null;
+  }
 
   return (
     <header className="px-10 sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm">
