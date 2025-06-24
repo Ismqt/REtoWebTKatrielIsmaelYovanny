@@ -12,7 +12,8 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata = {
   title: "Sistema de Vacunación",
   description: "Sistema de gestión de vacunación para usuarios y tutores",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  manifest: "/manifest.json", // Link to the manifest file
 }
 
 export default function RootLayout({
@@ -22,6 +23,9 @@ export default function RootLayout({
 }>) {
   return (
         <html lang="es" suppressHydrationWarning>
+            <head>
+              <meta name="theme-color" content="#000000" />
+            </head>
             <body className={inter.className}>
         <ThemeProvider
           attribute="class"
